@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link href="style.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <title>Exclude Teachers</title>
+    <style>
+        body {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 20px;
+        }
+        .table-container {
+            max-height: 30vh;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        th, td {
+            white-space: nowrap;
+        }
+        th:nth-child(2), td:nth-child(2) {
+            width: 100%;
+        }
+        .btn-check:checked + .btn {
+            background-color: #6200ea !important; /* Bootstrap Primary Blue */
+            color: #ffffff !important;
+            border-color: #6200ea !important;
+        }
+        .btn-check + .btn {
+            font-size: 1.2rem;  /* Increase text size */
+            padding: 12px 20px; /* Increase padding */
+            min-width: 50px;    /* Ensure uniform width */
+            height: 50px;       /* Make it square */
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="header-container" style="text-align: center;">
+        <h1 style="text-align:center; position: relative; display: inline-block;">
+            RTTA
+
+        </h1>
+        <h2 style="text-align:center;">Exclude Teachers</h2>
+        <p style="text-align:center;">Software Donated By K.A.N.N.Sooriyabandara</p>
+    </div>
+    <div class="mb-3">
+        <label for="NameIn" class="form-label">Teacher's Unique ID</label>
+        <input  type="text" class="form-control" id="NameIn" placeholder="Enter ID">
+        <label id="Name" for="NameIn"></label>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Exclude Periods</label>
+        <div class="row g-2">
+            <!-- Loop for Bootstrap-styled checkboxes -->
+            <div class="col-auto" id="periodCheckboxes">
+                <div class="btn-group" role="group">
+                    <input type="checkbox" class="btn-check" id="period1" value="1">
+                    <label class="btn btn-outline-light" for="period1">1</label>
+
+                    <input type="checkbox" class="btn-check" id="period2" value="2">
+                    <label class="btn btn-outline-light" for="period2">2</label>
+
+                    <input type="checkbox" class="btn-check" id="period3" value="3">
+                    <label class="btn btn-outline-light" for="period3">3</label>
+
+                    <input type="checkbox" class="btn-check" id="period4" value="4">
+                    <label class="btn btn-outline-light" for="period4">4</label>
+
+                    <input type="checkbox" class="btn-check" id="period5" value="5">
+                    <label class="btn btn-outline-light" for="period5">5</label>
+
+                    <input type="checkbox" class="btn-check" id="period6" value="6">
+                    <label class="btn btn-outline-light" for="period6">6</label>
+
+                    <input type="checkbox" class="btn-check" id="period7" value="7" checked>
+                    <label class="btn btn-outline-light" for="period7">7</label>
+
+                    <input type="checkbox" class="btn-check" id="period8" value="8" checked>
+                    <label class="btn btn-outline-light" for="period8">8</label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <button onclick="contin();" type="button" id="contBtn" class="btn btn-primary">Continue</button>
+
+    <div class="table-container table-responsive">
+        <table class="table table-hover table-dark">
+            <thead>
+            <tr><th>ID</th><th>Name</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="lis"></tbody>
+        </table>
+
+    </div>
+
+
+    <button onclick="done();" type="button" class="btn btn-primary">Done</button>
+</div>
+<script>
+    var globalFullTodayData;
+    var jsonData;
+    setTimeout(function () {
+        readRecords("Teachers", {}, function (rec) {
+            var data = jsonToTeachersArray(rec);
+
+            jsonData = rec;
+            globalFullTodayData = replaceUndefinedWithNone(convertTeacherData(data, Day));
+
+        });
+
+
+
+    }, 1000);
+    var data = jsonToTeachersArray(jsonData);
+
+
+
+
+
+
+
+    function jsonToTeachersArray(jsonData) {
+        if (typeof jsonData === "string") {
+            try {
+                jsonData = JSON.parse(jsonData);
+            } catch (e) {
+                //console.error("Invalid JSON string:", e);
+                return [];
+            }
+        }
+
+        if (!Array.isArray(jsonData)) {
+            //console.error("Expected an array but got:", jsonData);
+            return [];
+        }
+
+        return jsonData.map(entry => ({
+            id: entry["ID"],
+            name: entry["Teacher's Name"],
+            date: entry["Date"],
+            periods: Object.keys(entry)
+                .filter(key => key.match(/^\d+$/)) // Get only period numbers (1-8)
+                .sort((a, b) => a - b) // Ensure proper order
+                .map(key => entry[key].replace(/\\n/g, "\n")) // Replace \n correctly
+        }));
+    }
+
+    function readRecords(tableName, queryParams, callback) {
+
+        const baseUrl = "https://spiny-tricky-parsley.glitch.me/api/getstring?q=";
+        const query = `SELECT * FROM ${tableName}`; // Adjust the query as needed
+        const url = baseUrl + encodeURIComponent(query);
+
+        fetch(url)
+            .then(res=>res.text())
+            .then(data => {
+                const records = JSON.parse(JSON.parse(data).content); // Adjusted according to your JSON structure
+                console.log(records);
+                callback(records);
+            })
+            .catch(error => console.error("Fetch error:", error));
+    }
+    function convertTeacherData(input, selectedDate) {
+        // Filter based on the selected date
+        const filteredData = input.filter(entry => entry.date === selectedDate);
+
+        return filteredData.map(entry => {
+            const periodsWithWork = entry.periods.filter(period => period[0] !== "-").length;
+
+            return {
+                id: entry.id,
+                teacherName: entry.name,
+                working: periodsWithWork,
+                periods: entry.periods.map(period => {
+                    if (period === "-" || period === "") {
+                        return [period, ""]; // Return the period as is with an empty subject
+                    }
+
+                    const [className, subject] = period.split("\n");
+                    return [className, subject]; // Split class and subject
+                })
+            };
+        });
+    }
+    function replaceUndefinedWithNone(data) {
+        return data.map(teacher => {
+            const updatedPeriods = teacher.periods.map(period => {
+                if (period[1] === undefined) {
+                    return [period[0], "none"];
+                }
+                return period;
+            });
+            return {
+                ...teacher,
+                periods: updatedPeriods
+            };
+        });
+    }
+
+
+</script>
+<script>
+
+
+
+
+    function logT(str) {
+        const log = document.getElementById("cons");
+        log.value += str + "\n";
+        log.scrollTop = log.scrollHeight;
+    }
+
+    let val2 = false; // Assuming this is for validation
+
+    document.getElementById("NameIn").addEventListener("keyup", function(event) {
+        const teacherId = document.getElementById("NameIn").value;
+        var teacher = getTeacherById(globalFullTodayData,teacherId);
+        if (event.which === 13) {
+            // Focus to the button group when Enter is pressed in the textbox
+            if (teacher != null) {
+                document.getElementById('contBtn').focus();
+                console.log("HI");
+                val2 = true;
+            }
+        } else {
+            if (teacher != null) {
+                document.getElementById("Name").innerHTML = teacher.teacherName;
+            }else if(teacherId == ""){
+                document.getElementById("Name").innerHTML = "";
+
+            }
+            else{
+                document.getElementById("Name").innerHTML = `<span style="color:red;">Invalid ID</span`;
+
+            }
+            val2 = false;
+        }
+    });
+
+    function getSelectedPeriods() {
+        let selected = [];
+        document.querySelectorAll('.btn-check').forEach(cb => {
+            if(cb.checked) {
+                selected.push(true);
+            }else{
+                selected.push(false);
+
+            }
+        });
+        return selected;
+    }
+
+    function contin(){
+        if(val2 === true) {
+            console.log("contin Exuted");
+
+            const teacherId = document.getElementById("NameIn").value;
+            const teacher = getTeacherById(globalFullTodayData, teacherId);
+
+            if (teacher) {
+                var selectedPeriods = getSelectedPeriods();
+                var rowData = "";
+                for (var i = 0; i < selectedPeriods.length; i++) {
+                    if(selectedPeriods[i] === true) {
+                        rowData += "<td> <span> &#x2714;</span> </td>";
+                    }else{
+                        rowData += "<td> <span>&#10008;</span> </td>";
+
+                    }
+                }
+                document.getElementById("lis").innerHTML += `
+               <tr id="row-${teacherId}">
+                   <td>${teacherId}</td>
+                   <td>${teacher.teacherName}</td>
+                   ${rowData}
+                   <td><button class="btn btn-danger btn-sm" onclick="removeRow(${teacherId})">Remove</button></td>
+               </tr>
+           `;
+
+
+                // Excluded += `${teacherId}:${document.getElementById("textbox2").value},`;
+
+                // Reset form
+
+
+                document.getElementById("NameIn").value = "";
+                document.getElementById("Name").innerHTML = "";
+
+                document.getElementById("NameIn").focus();
+            }
+        }
+    }
+    function getExcludedPeriods() {
+        let result = [];
+        document.querySelectorAll("#lis tr").forEach(row => {
+            let cells = row.querySelectorAll("td");
+            let id = cells[0].textContent.trim();
+
+            for (let i = 2; i <= 9; i++) { // Periods are in columns 2 to 9 (index 2 to 9)
+                if (cells[i].innerHTML.includes("✔")) {
+                    result.push([id, i - 1]);
+                }
+            }
+        });
+
+        return result;
+    }
+
+
+    var Day = localStorage.getItem("day");
+    //var Day = days[new Date().getDay()];
+    let Excluded = "";
+    let val = false;
+    function getTeacherById(data, teacherId) {
+        return data.find(teacher => teacher.id === teacherId) || null;
+    }
+    function period(event) {
+        const periodNumber = parseInt(document.getElementById('textbox2').value) - 1;//AS AN INDEX
+        const teacherId = document.getElementById("NameIn").value;
+        var teacher = getTeacherById(globalFullTodayData,teacherId);
+
+        if (event.which !== 13) {
+            if (teacher) {
+                const dayPeriods = teacher.periods;
+                if (dayPeriods[periodNumber][0] === '-') {
+                    cont();
+                } else {
+                    inval();
+                }
+            }
+        } else {
+            if (val) {
+
+                document.getElementById("lis").innerHTML += `
+                <tr id="row-${teacherId}">
+                    <td>${teacherId}</td>
+                    <td>${document.getElementById("Name").innerHTML}</td>
+                    <td>${document.getElementById("textbox2").value}</td>
+
+                    <td><button class="btn btn-danger btn-sm" onclick="removeRow(${teacherId})">Remove</button></td>
+                </tr>
+            `;
+
+
+                //scrollToBottom();
+
+                Excluded += `${document.getElementById("NameIn").value}:${document.getElementById("textbox2").value},`;
+                val = false;
+                document.getElementById("textbox2").value = "";
+                document.getElementById("NameIn").value = "";
+                document.getElementById("Name").innerHTML = "";
+                document.getElementById("Valid").innerHTML = "";
+                document.getElementById("NameIn").focus();
+            }
+        }
+    }
+    function removeRow(teacherId) {
+        let row = document.getElementById("row-" + teacherId);
+        if (row) row.remove();
+    }
+    function cont() {
+        document.getElementById("Valid").innerHTML = "Valid";
+        val = true;
+    }
+
+    function inval() {
+        document.getElementById("Valid").innerHTML = "<span style='color:red'>Invalid<br>Period specified is not free</span>";
+        val = false;
+    }
+    function formatExcludedPeriods(data) {
+        return data.map(([id, period]) => `${id}:${period}`).join(",");
+    }
+    function done() {
+        var result = formatExcludedPeriods(getExcludedPeriods());
+        console.log(result);
+        const queryString = window.location.search;
+        window.location = `process.html${queryString}&exclude=${encodeURIComponent(result)}`;
+    }
+</script>
+
+</body>
+<script src="script.js"></script>
+
+</html>

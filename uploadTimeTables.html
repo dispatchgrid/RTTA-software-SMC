@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CSV to JSON Viewer</title>
+</head>
+<body>
+<input type="file" id="csvFile" accept=".csv" />
+<button onclick="convertCSVtoJSON()">Convert to JSON</button>
+<pre id="output"></pre>
+
+<script>
+  function convertToOneLine(inputString) {
+    return inputString.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function convertCSVtoJSON() {
+    const fileInput = document.getElementById('csvFile');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const text = e.target.result;
+      const lines = text.split('\n').filter(Boolean);
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+      const data = lines.slice(1).map(line => {
+        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, ''));
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = values[i]);
+        const jsonEntry = {
+          ID: obj['ID'],
+          "Teacher's Name": obj['Name'],
+          Date: obj['Date']
+        };
+        for (let i = 1; i <= 8; i++) {
+          const cls = obj[`P${i} Class`] || '';
+          const subj = obj[`P${i} Subject`] || '';
+          jsonEntry[i.toString()] = cls && subj ? cls + '\\n' + subj : cls || subj || '-';
+        }
+        return jsonEntry;
+      });
+      var output = convertToOneLine(JSON.stringify(data, null, 2))
+
+      document.getElementById('output').textContent = output;
+      fetch('https://spiny-tricky-parsley.glitch.me/api/setstring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ s: output })
+      })
+              .then(res => res.text())
+              .then(msg => {
+                console.log("Response:", msg);
+                alert("DONE");
+              })
+              .catch(err => console.error("Error setting string:", err));
+    };
+
+
+    reader.readAsText(file);
+  }
+</script>
+</body>
+</html>
