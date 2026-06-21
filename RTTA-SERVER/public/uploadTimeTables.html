@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CSV to JSON Viewer</title>
+</head>
+<body>
+<input type="file" id="csvFile" accept=".csv" />
+<button onclick="convertCSVtoJSON()">Convert to JSON</button>
+<pre id="output"></pre>
+
+<script>
+  function convertToOneLine(inputString) {
+    return inputString.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function csvToObject(csv) {
+    const [headerLine, ...lines] = csv.trim().split('\n');
+    const headers = headerLine.split(',');
+
+    return lines.map(line => {
+      const values = line.split(',');
+      return headers.reduce((obj, header, i) => {
+        obj[header.trim()] = values[i].trim();
+        return obj;
+      }, {});
+    });
+  }
+
+  function convertCSVtoJSON() {
+    const fileInput = document.getElementById('csvFile');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const text = e.target.result;
+      console.log(text);
+      console.log(csvToObject(text));
+      var DtTemp = csvToObject(text);
+      const lines = text.split('\n').filter(Boolean);
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+      var ind = 0;
+      const data = lines.slice(1).map(line => {
+        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, ''));
+
+        const obj = {};
+        console.log(DtTemp[ind]);
+        headers.forEach((h, i) => obj[h] = values[i]);
+  console.log(headers);
+        obj[ind] =DtTemp[ind];
+        const jsonEntry = {
+          ID: obj['ID'],
+          "Teacher's Name": obj['Name'],
+          Date: obj['Date']
+        };
+
+        for (let i = 1; i <= 8; i++) {
+          const cls = obj[`P${i} Class`] || '';
+          var subj = obj[`P${i} Subject`] || '';
+
+          if(i === 8) {
+            subj = obj[`P${i} Subject\r`] || '';
+          }
+          console.log(subj);
+          jsonEntry[i.toString()] = cls && subj ? cls + '\\n' + subj : cls || subj || '-';
+        }
+
+  ind++;
+
+        return jsonEntry;
+      });
+      var output = convertToOneLine(JSON.stringify(data, null, 2))
+
+      document.getElementById('output').textContent = output;
+      fetch('http://localhost:3000/api/setstring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ s: output })
+      })
+              .then(res => res.text())
+              .then(msg => {
+                console.log("Response:", msg);
+                alert("DONE");
+              })
+              .catch(err => console.error("Error setting string:", err));
+    };
+
+
+    reader.readAsText(file);
+  }
+</script>
+</body>
+</html>

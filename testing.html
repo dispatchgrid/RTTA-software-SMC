@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CoreGrid Loader</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: #fff;
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+        }
+
+        #line1 {
+            font-size: 2em;
+            margin-bottom: 0.5em;
+        }
+
+        #line2 {
+            font-size: 1em;
+            opacity: 0.8;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 1ch;
+            background-color: orange;
+            animation: blink 0.8s steps(1) infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1 }
+            51%, 100% { opacity: 0 }
+        }
+
+        #main-content {
+            display: none;
+            padding: 2em;
+            text-align: center;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">
+    <div id="line1"></div>
+    <div id="line2"></div>
+</div>
+
+<div id="main-content">
+    <h1>Welcome to CoreGrid</h1>
+    <p>This is your main content, revealed after the typing animation.</p>
+</div>
+
+<script>
+    const line1Text = "CoreGrid";
+    const line2Text = "Relief Time Table Allocator";
+
+    const line1 = document.getElementById("line1");
+    const line2 = document.getElementById("line2");
+    const overlay = document.getElementById("loading-overlay");
+    const content = document.getElementById("main-content");
+
+    const cursor = document.createElement("span");
+    cursor.classList.add("cursor");
+    cursor.textContent = " ";
+
+    line1.appendChild(cursor);
+
+    let i = 0;
+    let j = 0;
+
+    function typeLine1() {
+        if (i < line1Text.length) {
+            cursor.before(document.createTextNode(line1Text.charAt(i)));
+            i++;
+            setTimeout(typeLine1, 200); // slower typing for CoreGrid
+        } else {
+            setTimeout(() => {
+                typeLine2();
+            }, 500);
+        }
+    }
+
+    function typeLine2() {
+        line2.appendChild(cursor);
+        if (j < line2Text.length) {
+            cursor.before(document.createTextNode(line2Text.charAt(j)));
+            j++;
+            setTimeout(typeLine2, 50); // faster typing for subtitle
+        } else {
+            setTimeout(() => {
+                fadeOutOverlay();
+            }, 3000);
+        }
+    }
+
+    function fadeOutOverlay() {
+        let opacity = 1;
+        const fade = setInterval(() => {
+            opacity -= 0.05;
+            overlay.style.opacity = opacity;
+            if (opacity <= 0) {
+                clearInterval(fade);
+                overlay.style.display = "none";
+                content.style.display = "block";
+            }
+        }, 50);
+    }
+
+    window.addEventListener("DOMContentLoaded", typeLine1);
+</script>
+
+</body>
+</html>

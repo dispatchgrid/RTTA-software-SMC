@@ -1,0 +1,241 @@
+/* Dark theme base */
+
+body {
+    background-color: #121212 !important;
+    color: white !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    font-family: 'Poppins', sans-serif !important;
+    padding: 0px !important;
+}
+
+*{
+    font-family: monospace !important;
+}
+
+/* Container animation */
+.container {
+   
+    animation: fadeIn 0.8s ease-in-out !important;
+    margin-top: 10px !important;
+
+}
+
+/* Progress Bar */
+.progress {
+    height: 30px !important;
+    background: #1e1e1e !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+.progress-bar {
+    font-size: 1.2rem !important;
+    background: #6200ea !important;
+    transition: width 0.4s linear !important;
+}
+
+/* Textarea & Textboxes */
+textarea,
+input[type="text"] {
+    background: #181818 !important;
+    color: #ffffff !important;
+    border: 1px solid #333 !important;
+    resize: none !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    width: 100% !important;
+    font-family: monospace;
+}
+
+/* Textarea is read-only */
+textarea {
+
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6) !important;
+
+
+}
+
+
+ .table-container {
+     max-height: 35vh;
+     overflow-y: auto;
+     height:35vh !important;
+     border:none !important;
+ }
+
+.inputTB{
+
+
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6) !important;
+
+}
+
+::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Headings */
+h1 sup .badge {
+    font-size: 0.9rem !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+}
+
+/* Badges */
+.badge-turbo {
+    background: #7b1fa2 !important;
+    color: #fff !important;
+    box-shadow: 0 0 10px #7b1fa2 !important;
+}
+
+.badge-stable {
+    background: #03dac6 !important;
+    color: #000 !important;
+    box-shadow: 0 0 10px #03dac6 !important;
+}
+
+/* Buttons */
+.btn-custom {
+    font-size: 1.2rem !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out !important;
+}
+
+.btn-primary {
+    background: #6200ea !important;
+    border: none !important;
+}
+
+.btn-primary:hover {
+    background: #7b1fa2 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 15px #7b1fa2 !important;
+}
+
+.btn-success {
+    background: #03dac6 !important;
+    border: none !important;
+}
+
+.btn-success:hover {
+    background: #00c4b4 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 0 15px #00c4b4 !important;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0 !important;
+        transform: translateY(-10px) !important;
+    }
+
+    to {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+}
+
+
+/* Table Styling */
+table {
+   
+  
+    border-collapse: collapse !important;
+    background: #000000 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    overflow: auto !important;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Table Head */
+thead {
+    background: #6200ea !important;
+    color: white !important;
+}
+
+/* Table Cells */
+th, td {
+    padding: 12px !important;
+
+  /*  border: 1px solid #333 !important;*/
+ background: #121212 !important;
+ 
+
+  
+}
+
+/* Alternate Row Colors */
+tbody tr:nth-child(even) {
+    background: #202020 !important;
+}
+
+/* Hover Effect */
+tbody tr:hover {
+    background: #2a2a2a !important;
+  
+}
+
+
+tbody td:hover {
+    background: #2a2a2a !important;
+  
+}
+
+
+
+/* Table Borders */
+th {
+    border-bottom: 2px solid #7b1fa2 !important;
+}
+
+
+
+/* Style the scrollbar */
+::-webkit-scrollbar {
+    width: 12px; /* Set the width of the scrollbar */
+}
+
+/* Style the scrollbar track (background) */
+::-webkit-scrollbar-track {
+    background: black; /* Set the track background to black */
+}
+
+/* Style the scrollbar thumb (the draggable part) */
+::-webkit-scrollbar-thumb {
+    background: purple; /* Set the thumb color to purple */
+    border-radius: 10px; /* Optional: add rounded corners to the thumb */
+}
+
+/* Optional: Style the thumb when hovered */
+::-webkit-scrollbar-thumb:hover {
+    background: darkorchid; /* Change color on hover */
+}
+
+
+
+
+.corner-text {
+    position: absolute;
+    right: -50px;
+    bottom: -0px;
+    transform: rotate(25deg);
+    font-size: 12px;
+    animation: pop 1.5s infinite alternate ease-in-out;
+    transform-origin: center;
+}
+
+@keyframes pop {
+    from {
+        transform: rotate(-25deg) scale(1);
+    }
+    to {
+        transform: rotate(-25deg) scale(1.2);
+    }
+}

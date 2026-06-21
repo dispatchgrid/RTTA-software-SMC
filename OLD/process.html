@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="../style.css" rel="stylesheet">
+    <title>Relief time-table genarator</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://code.jquery.com/jquery-1.12.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        body {
+            background-color: #343a40;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin-top: 1%;
+            overflow-y: hidden;
+        }
+
+        .progress {
+            height: 30px;
+            /* Increased height */
+        }
+
+        .progress-bar {
+            font-size: 1.5rem;
+            /* Larger font size */
+        }
+
+        textarea {
+            height: 40vh;
+
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="header-container" style="text-align: center;">
+    <h1 style="text-align:center; position: relative; display: inline-block;">
+        RTTA
+
+    </h1>
+    <h2 style="text-align:center;">Processor</h2>
+    <p style="text-align:center;">Software Donated By K.A.N.N.Sooriyabandara</p>
+    </div>
+
+    <button class="btn btn-primary btn-lg mb-4" id="butto" onclick="butto();">Process</button>
+
+    <button onclick="window.open('view.html')" target="_blank" class="btn btn-success btn-lg mb-4"
+            style="visibility: hidden;" id="ViewBut">View
+    </button>
+
+
+    <button onclick="window.open('download.html')" target="_blank" class="btn btn-primary btn-lg mb-4"
+            style="visibility: hidden;" id="DownBut">Download
+    </button>
+
+    <h2>Progress : </h2>
+    <div class="progress mb-4">
+        <div class="progress-bar bg-info" id="pro" role="progressbar" style="width: 0%" aria-valuenow="50"
+             aria-valuemin="0" aria-valuemax="100">50%
+        </div>
+    </div>
+    <br>
+    <h2>Logs : </h2>
+    <textarea class="form-control" id="cons" rows="5" placeholder="Logs will appear here" readonly></textarea>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+<script src="../script.js"></script>
+<script>
+
+
+    var data = jsonToTeachersArray(jsonData);
+
+
+
+</script>
+
+<script>
+    function removeDuplicates(arr) {
+        return [...new Set(arr)];
+    }
+
+    // Example usage
+
+    //Previous ones
+    function butto() {
+        if (document.getElementById("butto").innerHTML == "Process") {
+            showProcess();
+            logTT("Processing started");
+
+            document.getElementById("butto").disabled = true;
+            document.getElementById("butto").innerHTML = "...";
+        } else if (document.getElementById("butto").innerHTML == "Upload") {
+
+            document.getElementById("butto").disabled = true;
+            document.getElementById("butto").innerHTML = "...";
+            generateSQLiteInsertQueryWithProgress(globalTodayDataWithRelief, addRelColumn(globalReliefOnly), function (generatedQuery) {
+                const startTime = performance.now();
+
+                sendSQLiteQueriesToServer("http://localhost:3000/api/sql", "DELETE FROM RTTA_main", function (error, data) {
+                    if (true) {
+                    console.log(generatedQuery);
+                        sendSQLiteQueriesToServer("http://localhost:3000/api/sql", generatedQuery, function (error, data) {
+                            if (!error) {
+
+
+                                const endTime = performance.now();
+
+                                const timeTaken = endTime - startTime;
+                                var bytes = byteCount(generatedQuery);
+                                var kb = bytes / 1000;
+                                logTT("Completed 2 queries (" + kb + "Kb) in " + (timeTaken / 1000).toFixed(1) + "s.");
+                                setTimeout(function () {
+                                    logTT("");
+                                    logTT("");
+                                    logTT("PDF is ready to be downloaded");
+                                    logTT("");
+                                    logTT("");
+                                    logTT("Thank you for using RTTA software");
+                                    logTT("");
+                                    logTT("Developed by K.A.N.Nethmal Sooriyabandara @ 2025");
+                                    logTT("Version - 4.1 Turbo Stable");
+                                    document.getElementById("ViewBut").style.display = "none";
+                                    document.getElementById("butto").style.display = "none";
+
+                                    document.getElementById("DownBut").style.visibility = "visible";
+
+                                }, 2000)
+                            }
+                        });
+
+                    }
+                });
+            });
+
+        }
+    }
+
+    function generateTableFromData(teachersData) {
+        let tableHTML = '<table id="myTable" class="table table-hover table-dark">';
+
+        // Add the table header
+        tableHTML += `
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Period 1</th>
+                <th>Period 2</th>
+                <th>Period 3</th>
+                <th>Period 4</th>
+                <th>Period 5</th>
+                <th>Period 6</th>
+                <th>Period 7</th>
+                <th>Period 8</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+        // Loop through the teachers data to create each row
+        teachersData.forEach((teacher, index) => {
+            let row = `<tr>
+            <td>${teacher.id}</td>
+            <td>${teacher.teacherName}</td>`;
+
+            // Loop through periods (P1 to P8) and add class and subject to each period
+            for (let i = 0; i < 8; i++) {
+                let period = teacher.periods[i];
+                let classInfo = period[0] || "-";  // If empty, replace with "-"
+                let subjectInfo = period[1] || "-";  // If empty, replace with "-"
+
+                // Add the class and subject in separate lines using <br>
+                row += `<td>${classInfo}<br>${subjectInfo}</td>`;
+            }
+
+            row += `</tr>`;
+            tableHTML += row;
+        });
+
+        tableHTML += `</tbody></table>`;
+
+        // Save the generated table HTML to localStorage under "AB"
+        localStorage.setItem("AB", tableHTML);
+
+        // Return the generated HTML table code
+        return tableHTML;
+    }
+
+    function logTT(str) {
+        document.getElementById("cons").value += str + "\n";
+        document.getElementById("cons").scrollTop = document.getElementById("cons").scrollHeight;
+    }
+
+    function byteCount(s) {
+        return encodeURI(s).split(/%..|./).length - 1;
+    }
+
+    var shi = 0;
+
+    function showProcess() {
+        if (shi >= 100) {
+            logTT("Processing finished");
+            logTT("Logs : ");
+            document.getElementById("butto").disabled = false;
+            document.getElementById("butto").innerHTML = "Upload";
+            shi = 100;
+            document.getElementById("pro").style.width = shi + "%";
+            document.getElementById("pro").innerHTML = shi + "%";
+            processRelief();
+        } else {
+            setTimeout(showProcess, 20);
+            shi += parseInt((Math.random() * 3).toFixed(0)) + 1;
+            document.getElementById("pro").style.width = shi + "%";
+            document.getElementById("pro").innerHTML = shi + "%";
+        }
+
+
+    }
+
+
+
+
+
+
+</script>
+
+
+<script>
+    var exeptionSubjects = ["_","PG","Aesth","PA345","PE345","12","13","EXCLUDE","EXCLUDED"];
+    var exeptionReplacementId = ["81","80","146","19"];
+    var nameDisplayExeptions = ["Aesth","G-1","G-2","G-3"];
+    var case1 = 0;
+    var case2 = 0;
+    var case3 = 0;
+    var case4 = 0;
+    var globalFullTodayData;
+    var globalTodayDataWithRelief;
+    var globalReliefOnly;
+    var dayStored = localStorage.getItem("day");
+
+    function urlParamToJsonAndArray(urlParam) {
+        const decodedJsonString = decodeURIComponent(urlParam);
+        const array = JSON.parse(decodedJsonString);
+        return array;
+    }
+
+    function processRelief() {
+
+        var covered = 0;
+        var count = 0;
+        var data = jsonToTeachersArray(jsonData);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const param1 = urlParams.get('absent');
+
+        var absent = urlParamToJsonAndArray(param1);
+
+        console.log("330");
+        var fullTodayData = replaceUndefinedWithNone(convertTeacherData(data, dayStored));
+        var TodayDataWithRelief = replaceUndefinedWithNone(convertTeacherData(data, dayStored));
+        var ReliefOnly = createEmptyCopy(fullTodayData);
+        globalFullTodayData = fullTodayData;
+        globalTodayDataWithRelief = TodayDataWithRelief;
+        globalReliefOnly = ReliefOnly;
+        console.log("337");
+
+        const urlParams1 = new URLSearchParams(window.location.search);
+        const param2 = urlParams1.get('exclude');
+
+        if (param2 != "") {
+            var lines = param2.split(",");
+            lines = removeDuplicates(lines);
+            console.log(lines.length);
+            for (var j = 0; j < lines.length; j++) {
+                var currId = lines[j].split(":")[0];
+                var per = parseInt(lines[j].split(":")[1]) - 1;
+                console.log(params2.split(","));
+
+
+                var teacherData = getTeacherById(fullTodayData,currId);
+                var i = per;
+                var absentPeriods = teacherData.periods;
+                const absentPeriod = absentPeriods[i];
+                var absentClass = absentPeriod[0];
+                var absentSubject = absentPeriod[1];
+                if (absentClass != "-" && (!containsAny(absentClass,exeptionSubjects))) {
+                    var suitableTeachers = getTeachersByFreePeriodAndSubject(TodayDataWithRelief, i + 1, absentSubject, absent, absentClass);
+                    count++;
+                    if (suitableTeachers.length >= 1) {
+                        if(containsAny(absentSubject,nameDisplayExeptions)){
+                            absentSubject=teacherData.teacherName+"*";
+                        }
+                        var assigned = (assignRelief(TodayDataWithRelief, ReliefOnly, suitableTeachers[0].id, i, absentClass, absentSubject));
+
+                        covered++;
+                    } else {
+                        logTT("Unable to find a match for " + addOrdinalSuffix(i + 1) + " period of teacher " + teacherData.teacherName + "(" + teacherData.id + ")");
+
+                    }
+                }else{
+                    var assigned = (assignRelief(TodayDataWithRelief, ReliefOnly, currId, per, "EXCLUDE", "NONE"));
+                }
+
+
+            }
+
+        }
+        absent = removeDuplicates(absent);
+        absent.forEach(absentTeacher => {
+            var teacherData = getTeacherById(fullTodayData, absentTeacher);
+
+            var absentPeriods = teacherData.periods;
+            for (let i = 0; i < absentPeriods.length; i++) {
+                const absentPeriod = absentPeriods[i];
+                var absentClass = absentPeriod[0];
+                var absentSubject = absentPeriod[1];
+                if (absentClass != "-" && (!containsAny(absentClass,exeptionSubjects))) {
+                    var suitableTeachers = getTeachersByFreePeriodAndSubject(TodayDataWithRelief, i + 1, absentSubject, absent, absentClass);
+                    count++;
+                    if (suitableTeachers.length >= 1) {
+                        if(containsAny(absentSubject,nameDisplayExeptions)){
+                            absentSubject=teacherData.teacherName+"*";
+                        }
+                        var assigned = (assignRelief(TodayDataWithRelief, ReliefOnly, suitableTeachers[0].id, i, absentClass, absentSubject));
+
+                        covered++;
+                    } else {
+                        logTT("Unable to find a match for " + addOrdinalSuffix(i + 1) + " period of teacher " + teacherData.teacherName + "(" + teacherData.id + ")");
+
+                    }
+                }
+            }
+
+        });
+        globalFullTodayData = fullTodayData;
+        globalTodayDataWithRelief = TodayDataWithRelief;
+        globalReliefOnly = ReliefOnly;
+        document.getElementById("ViewBut").style.visibility = "visible";
+        logTT("");
+        logTT("");
+
+        logTT(covered + " periods out of " + count + " is successfully covered (" + ((covered / count) * 100).toFixed(1) + "%) "+bar((covered / count) * 100));
+        logTT("Covered Under the Cases :");
+        logTT("\tCase 1 - Exact Subject      : " + case1 + " (" + ((case1 / count) * 100).toFixed(1) + "%) " + bar((case1 / count) * 100));
+        logTT("\tCase 2 - Cognate Subject    : " + case2 + " (" + ((case2 / count) * 100).toFixed(1) + "%) " + bar((case2 / count) * 100));
+        logTT("\tCase 3 - Familiar Teacher   : " + case3 + " (" + ((case3 / count) * 100).toFixed(1) + "%) " + bar((case3 / count) * 100));
+        logTT("\tCase 4 - Fallback Case      : " + case4 + " (" + ((case4 / count) * 100).toFixed(1) + "%) " + bar((case4 / count) * 100));
+        logTT("");
+        logTT("");
+        logTT("");
+        generateTableFromData(globalReliefOnly);
+    }
+
+
+
+    function bar(percentage) {
+        let filled = Math.round((percentage / 100) * 30);
+        return '█'.repeat(filled) + '_'.repeat(30 - filled);
+    }
+
+
+    function contains12or13f(str) {
+        return str.includes("12") || str.includes("13");
+    }
+
+    function addOrdinalSuffix(number) {
+        const suffixes = ['th', 'st', 'nd', 'rd'];
+        const v = number % 100;
+        return number + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+    }
+
+    function getTeacherById(data, teacherId) {
+        return data.find(teacher => teacher.id === teacherId) || null;
+    }
+
+    function sortByWorkingPeriods(data) {
+        return data.sort((a, b) => a.working - b.working);
+    }
+
+    function assignRelief(teachersArray, emptyTeachersArray, teacherID, period, className, subject) {
+        for (let i = 0; i < teachersArray.length; i++) {
+            if (teachersArray[i].id === teacherID) {
+                if (teachersArray[i].periods[period]) {
+                    // Assign the class and subject in the original teachers array
+                    teachersArray[i].periods[period] = [className, subject];
+
+                    // Mark the class and subject in the empty array as well
+                    emptyTeachersArray[i].periods[period] = [className, subject];
+
+                    // Increase the working period count by 1 in the original teachers array
+                    teachersArray[i].working += 1;
+
+                    return true; // Successfully assigned
+                }
+                return false; // Invalid period
+            }
+        }
+        return false; // Teacher not found
+    }
+
+    function convertTeacherData(input, selectedDate) {
+        // Filter based on the selected date
+        const filteredData = input.filter(entry => entry.date === selectedDate);
+
+        return filteredData.map(entry => {
+            const periodsWithWork = entry.periods.filter(period => period[0] !== "-").length;
+
+            return {
+                id: entry.id,
+                teacherName: entry.name,
+                working: periodsWithWork,
+                periods: entry.periods.map(period => {
+                    if (period === "-" || period === "") {
+                        return [period, ""]; // Return the period as is with an empty subject
+                    }
+
+                    const [className, subject] = period.split("\n");
+                    return [className, subject]; // Split class and subject
+                })
+            };
+        });
+    }
+
+    function getTeachersByFreePeriodAndSubject(data, givenPeriod, subject, ignoredIds, classStr) {
+        // Step 1: Filter teachers who have a free period ("-") at the given period and are NOT in ignoredIds
+        const teachersWithFreePeriod = data.filter(
+            teacher => teacher.periods[givenPeriod - 1][0] === '-' && !ignoredIds.includes(teacher.id)
+        );
+
+        // Step 2: Separate teachers into two groups: matching subject and others
+        const matchingSubject = [];
+        const otherTeachers = [];
+        const classTeachers = [];
+        const groupTeachers = [];
+
+        for (let teacher of teachersWithFreePeriod) {
+            const hasMatchingSubject = hasMatchingSubjectf(teacher, subject);
+            const hasMatchingGroupSubject = checkMatchingSubjectGroupsf(teacher, subject);
+            const hasMatchingClass = hasTheSameClass(teacher, classStr);
+
+            if(!containsAny(teacher.id,exeptionReplacementId)) {
+                var mat = false;
+                if (hasMatchingSubject) {
+                    matchingSubject.push(teacher);
+                    mat = true;
+                } else if (hasMatchingGroupSubject) {
+                    groupTeachers.push(teacher);
+
+                } else {
+                    otherTeachers.push(teacher);
+                }
+                if (hasMatchingClass) {
+                    classTeachers.push(teacher);
+
+                }
+            }
+        }
+
+        // Step 3: Sort both groups by the number of working periods (ascending order)
+        matchingSubject.sort((a, b) => a.working - b.working);
+        classTeachers.sort((a, b) => a.working - b.working);
+        otherTeachers.sort((a, b) => a.working - b.working);
+        groupTeachers.sort((a, b) => a.working - b.working);
+
+
+        var matchingCase = getFirstNonEmptyGroup(matchingSubject, groupTeachers, classTeachers, otherTeachers);
+        eval(matchingCase + "++;");
+
+        // Step 4: Combine both groups with matching subjects first
+        return [...matchingSubject, ...groupTeachers, ...classTeachers, ...otherTeachers];
+    }
+
+    var miss = 0;
+
+    function getFirstNonEmptyGroup(matchingSubject, groupTeachers, classTeachers, otherTeachers) {
+        if (matchingSubject.length > 0) return 'case1';
+        if (groupTeachers.length > 0) return 'case2';
+        if (classTeachers.length > 0) return 'case3';
+        if (otherTeachers.length > 0) return 'case4';
+        return 'miss';
+    }
+
+    function hasTheSameClass(teacher, classString) {
+        for (let i = 0; i < teacher.periods.length; i++) {
+
+
+            if (teacher.periods[i][0] === classString) {
+
+
+                return true; // Found a matching subject
+
+            }
+        }
+        return false; // No matching subject found
+    }
+
+    function hasMatchingSubjectf(teacher, subject) {
+        for (let i = 0; i < teacher.periods.length; i++) {
+            //conl(teacher.periods[i]+"     "+subject);
+            if (teacher.periods[i][1] === subject) {
+
+
+                return true; // Found a matching subject
+
+            }
+
+        }
+
+
+        return false; // No matching subject found
+    }
+
+
+    function conl(str) {
+
+    }
+
+    function checkMatchingSubjectGroupsf(teacher, subject) {
+
+        for (let i = 0; i < teacher.periods.length; i++) {
+            //conl(teacher.periods[i]+"     "+subject);
+            // conl(teacher.periods[i][1]);
+            if (checkMatchingSubjectGroups(teacher.periods[i][1], subject)) {
+                conl("Check matching subject");
+
+                return true; // Found a matching subject
+            }
+
+        }
+
+        return false; // No matching subject found
+    }
+
+    function checkMatchingSubjectGroups(period, subject) {
+        let subjectGroups = ["Scie,Maths,Engli,Geo,Civic", "Sinha,Budd,Hist,PTS","Scie,Health","Scie,Health,Math,Geo,Civic,Engli,Korean,G-3"];
+        for (let group of subjectGroups) {
+            let subjects = group.split(",");
+            if (subjects.includes(period) && subjects.includes(subject)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    function containsAny(str, arr) {
+        return arr.some(sub => str.includes(sub));
+    }
+
+    function replaceUndefinedWithNone(data) {
+        return data.map(teacher => {
+            const updatedPeriods = teacher.periods.map(period => {
+                if (period[1] === undefined) {
+                    return [period[0], "none"];
+                }
+                return period;
+            });
+            return {
+                ...teacher,
+                periods: updatedPeriods
+            };
+        });
+    }
+
+
+    function createEmptyCopy(teachersArray) {
+        return teachersArray.map(teacher => ({
+            ...teacher,
+            periods: teacher.periods.map(() => ["-", ""]) // Replace all periods and subjects with "-"
+        }));
+    }
+
+    function generateSQLiteInsertQueryWithProgress(teachersData, teachersDataWithRel, callback) {
+        const today = new Date().toISOString().split('T')[0].replace(/-/g, '/'); // Format YYYY/MM/DD
+
+        let insertQueries = '';
+        const originalTeachers = teachersData;  // Used for progress
+        let uploadIndex = 0; // Track progress
+
+        // Function to simulate delay and log progress
+        function processTeacherData() {
+            if (uploadIndex < originalTeachers.length) {
+                const teacher = teachersData[uploadIndex];
+                const relTeacher = teachersDataWithRel[uploadIndex]; // Get corresponding rel value
+
+                // Generate period and subject columns
+                const periods = teacher.periods.map(period => period[0]);
+                const subjects = teacher.periods.map(period => period[1] || "none");  // Default subject to "none" if undefined
+
+                // Construct the insert query
+                const insertQuery = `INSERT INTO RTTA_main (ID, Name, P1, S1, P2, S2, P3, S3, P4, S4, P5, S5, P6, S6,
+                                                            P7, S7, P8, S8, Date, Rel)
+                                     VALUES ('${teacher.id}', '${teacher.teacherName}', '${periods[0]}', '${subjects[0]}
+                                             ', '${periods[1]}', '${subjects[1]}', '${periods[2]}', '${subjects[2]}',
+                                             '${periods[3]}', '${subjects[3]}', '${periods[4]}', '${subjects[4]}',
+                                             '${periods[5]}', '${subjects[5]}', '${periods[6]}', '${subjects[6]}',
+                                             '${periods[7]}', '${subjects[7]}', '${today}', '${relTeacher.Rel}');`;
+
+                insertQueries += insertQuery;  // Add the insert query to the output st
+
+                // Update progress bar and random log generation
+                setTimeout(() => {
+                    document.getElementById("pro").style.width = ((uploadIndex / (originalTeachers.length - 1)) * 100).toFixed(0) + "%";
+                    document.getElementById("pro").innerHTML = ((uploadIndex / (originalTeachers.length - 1)) * 100).toFixed(0) + "%";
+
+                    logTT("Processing " + (uploadIndex + 1) + " out of " + originalTeachers.length);
+
+                    if (Math.random() < 0.05) {
+                        logTT("Verification failed");
+                        logTT("Reprocessing " + (uploadIndex + 1) + " out of " + originalTeachers.length);
+                        logTT("Verifying " + (uploadIndex + 1) + " out of " + originalTeachers.length);
+                    }
+
+                    uploadIndex++;  // Increment the index to move to the next teacher
+                    processTeacherData();  // Recursively call for next teacher
+                }, 100);  // 100ms delay between each teacher processing
+            } else {
+                // When all teachers have been processed, call the callback with the final queries
+                logTT("Fetching query...");
+                callback(insertQueries);  // Pass the queries to the callback function
+            }
+        }
+
+        // Start the process
+        processTeacherData();
+    }
+
+    function addRelColumn(data) {
+        return data.map(teacher => {
+            let rel = '';
+
+            for (let i = 0; i < 8; i++) {
+                rel += (teacher.periods[i][0] === '-') ? '0' : '1';
+            }
+
+            return {...teacher, Rel: rel};
+        });
+    }
+
+    function sendSQLiteQueriesToServer(url, queries, callback) {
+        // Ensure the queries parameter is a string, and prepare the payload
+        const payload = {
+            queries: queries
+        };
+
+        // Use the fetch API to send the POST request
+        fetch(url, {
+            method: 'POST', // Using POST method
+            headers: {
+                'Content-Type': 'application/json' // Indicating JSON content type
+            },
+            body: JSON.stringify(payload) // Convert the payload to JSON format
+        })
+            .then(response => response.json()) // Assuming the server responds with JSON
+            .then(data => {
+                // Call the callback function with the response data
+                if (callback && typeof callback === 'function') {
+                    callback(null, data); // Passing the response data to the callback
+                }
+            })
+            .catch(error => {
+                // Handle any errors that occur during the request
+                console.error('Error sending data:', error);
+                // Call the callback function with the error
+                if (callback && typeof callback === 'function') {
+                    callback(error, null); // Passing the error to the callback
+                }
+            });
+    }
+
+
+</script>
+
+
+</html>

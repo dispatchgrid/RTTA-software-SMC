@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link href="../style.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF with Tables</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</head>
+
+<body>
+<br>
+<h1 class="text-center mb-4">Download PDF</h1>
+<div class="container"
+     style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+
+
+    <button type="button" class="btn btn-primary" id="downloadPDF"
+            style="font-size: 1.5rem; padding: 15px 30px;">Download PDF</button>
+</div>
+
+<script>
+    function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("l", "mm", "a4"); // Set orientation to landscape
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 10;
+        const tableWidth = (pageWidth - (5 * margin)) / 4; // 4 tables on long side
+        const startY = 20;
+        const tableHeight = 65;
+
+
+        var dt = removeEmpty(loadTableData());
+        conl(loadTableData());
+        conl(dt);
+
+        const totalPages = Math.ceil(dt.length / 8); // Number of pages to generate
+
+        var currentIndex = 0;
+
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+            let yOffset = startY;
+            let xOffset = margin;
+
+
+            if (pageNum > 1) {
+                // Add a new page after the first one
+            }
+            doc.setDrawColor(0, 0, 0); // Set draw color to red
+            // Draw a horizontal line in the center of the page
+            const centerY = pageHeight / 2; // Y coordinate of the center of the page
+            doc.setLineWidth(0.5); // Set line width
+            doc.line(0, centerY, pageWidth - 0, centerY); // Draw line from left to right
+
+
+            // Draw vertical lines dividing the page into 4 equal parts
+            const firstLineX = pageWidth / 4; // 1st vertical line
+            const secondLineX = pageWidth / 2; // 2nd vertical line
+            const thirdLineX = (pageWidth / 4) * 3; // 3rd vertical line
+            doc.line(firstLineX, 0, firstLineX, pageHeight - 0); // First vertical line
+            doc.line(secondLineX, 0, secondLineX, pageHeight - 0); // Second vertical line
+            doc.line(thirdLineX, 0, thirdLineX, pageHeight - 0); // Third vertical line
+
+            for (let row = 0; row < 2; row++) { // 2 rows of tables
+                for (let col = 0; col < 4; col++) { // 4 columns of tables
+                    if (currentIndex < dt.length) {
+                        let tableData = [];
+                        var rw = dt[currentIndex];
+                        var name = dt[currentIndex].name;
+                        let today = new Date();
+                        let formattedDate = today.getFullYear() + '/' + (today.getMonth() + 1).toString().padStart(2, '0') + '/' + today.getDate().toString().padStart(2, '0');
+
+
+                        for (var i = 0; i < 8; i++) {
+
+                            // tableData.push(i,row[])
+                            tableData.push([(i + 1), rw.periods[i],rw.subjects[i]]);
+                            if(i == 0){
+                                console.log([(i + 1), rw.periods[i],rw.subjects[i]]);
+
+                            }
+
+                        }
+
+
+
+                        if (row == 1 && col == 0) {
+                            yOffset += 25; // Small space after header before table
+                        }
+                        doc.setFontSize(12);
+
+                        // Calculate the x-coordinate for centered header text
+                        const headerX = xOffset; // Center the header over the table
+
+
+
+                        // Add page-specific header text
+                        doc.text(name, headerX, yOffset - 8, { align: 'left' });
+                        doc.setFontSize(9);
+                        formattedDate  = "2024/11/13"
+                        doc.text(formattedDate, headerX, yOffset - 1, { align: 'left' });
+                        var result = checkData(name);
+                        conl(result);
+                        if (result[0] == "1") {
+                            conl("I got it");
+                            doc.text("* Office purposes only (not a relief period)", headerX, yOffset + tableHeight + 10, { align: 'left' });
+
+
+
+                            tableData[0] = [1, (result[1] + "*"),removeText(removeText(result[2],'\n'),' ')];
+                            console.log("ODD ONE OUT");
+                            console.log([1, (result[1] + "*"),removeText(removeText(result[2],'\n'),' ')]);
+                        }
+
+                        doc.setFontSize(7);
+
+                        doc.text("Software Donated By K.A.N.N.Sooriyabandara", headerX, yOffset + tableHeight + 15, { align: 'left' });
+
+                        doc.addImage(waterMarkImage, 'PNG', (xOffset+(tableWidth/2))-30, (yOffset+(tableHeight/2))-30, 60, 60);
+
+                        doc.autoTable({
+                            startY: yOffset,
+                            head: [["#", "Class","Subject"]],
+                            body: tableData,
+                            theme: "grid",
+                            styles: {
+                                fontSize: 8,
+                                halign: 'center',
+                                valign: 'middle',
+                                lineColor: [0, 0, 0], // Black lines
+                                textColor: [0, 0, 0], // Black text
+                                fillColor: false, // White background
+                                headerStyles: {
+                                    textColor: [0, 0, 0], // Black text for header
+                                    fillColor: [255, 255, 255], // White background for header
+                                    lineWidth: 0.5, // Thin line for header
+                                    lineColor: [0, 0, 0], // Black lines for header
+                                },
+                            },
+                            tableWidth: tableWidth,
+                            margin: { left: xOffset },
+                            columnStyles: {
+                                0: { // 0 is the index for the 'Period' column
+                                    cellWidth: 10, // or a specific number like 10
+                                }
+                            }
+                        });
+
+
+
+
+                        currentIndex++;
+
+                    }
+                    xOffset += tableWidth + margin + (1);
+                }
+                yOffset += tableHeight + margin;
+                xOffset = margin;
+            }
+
+            doc.addPage();
+        }
+
+        doc.save("tables.pdf");
+    }
+    var waterMarkImage;
+
+    function savedImage(){
+    }
+    savedImage();
+    function addWaterMark(doc) {
+        var totalPages = doc.internal.getNumberOfPages();
+
+        for (i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            //doc.addImage(imgData, 'PNG', 40, 40, 75, 75);
+            doc.setTextColor(150);
+            doc.text(50, doc.internal.pageSize.height - 30, 'Watermark');
+        }
+
+        return doc;
+    }
+    function removeText(originalText, textToRemove) {
+        return originalText.replaceAll(textToRemove, '');
+    }
+
+    function loadTableData() {
+        var storedTable = localStorage.getItem("AB");
+        if (!storedTable) return [];
+        storedTable = storedTable.replace(/<br>/g, '#');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(storedTable, "text/html");
+        const rows = doc.querySelectorAll("tbody tr");
+
+        let tableData = [];
+
+        for (let row of rows) {
+            const cells = row.querySelectorAll("td");
+            if (cells.length >= 10) {
+                const name = cells[1].textContent.trim();
+                const periods = [];
+                var subjects = [];
+                for (let i = 2; i <= 9; i++) {
+                    periods.push((cells[i].textContent.trim()).split('#')[0]);
+                    subjects.push((cells[i].textContent.trim()).split('#')[1]);
+
+                }
+                tableData.push({ name, periods,subjects });
+            }
+        }
+
+
+
+
+
+
+        return tableData;
+    }
+
+    function conl(reg){
+
+    }
+
+    function removeEmpty(arr) {
+        return arr.filter(row =>
+            row.periods.some(period => period.length > 1 && period !== "-" && period !== "EXCLUDE")
+        );
+    }
+
+
+    let globalData = null;
+    var fetched = false;
+    async function fetchData() {
+
+        const response = await fetch('http://localhost:3000/api/sql?queries=select*from%20RTTA_main');
+        const data = await response.json();
+        globalData = data.results[0].result; // Store the result in the global variable
+
+        fetched = true;
+
+
+    }
+
+    function findRowIndexByName(name) {
+        // Fetch data if not already fetched
+
+
+        // Find the index of the row where the "Name" field matches the input name
+        const rowIndex = globalData.findIndex(row => row.Name === name);
+
+        return rowIndex === -1 ? null : rowIndex; // Return null if name is not found, else return the index
+    }
+
+    function checkData(name) {
+        conl(globalData);
+
+        conl("rtawetvawt")
+        // Find the row index for the given name
+        const rowIndex = findRowIndexByName(name);
+        conl(rowIndex);
+        if (rowIndex === null) {
+            alert("ERRRRR");
+            return `Name "${name}" not found in the data`; // Return a message if name is not found
+        }
+
+        const row = globalData[rowIndex]; // Get the row based on the found index
+        conl(row);
+        // Check if the first character of "Rel" is '1'
+        if (row.Rel.charAt(0) === '1') {
+            return ["0", ""]; // If "Rel" first character is '1', return false
+        }
+
+        // Check if "P1" is "-"
+        conl(row.P1.length);
+        if (row.P1.length == 1) {
+            return ["0", ""]; // If "P1" is "-", return false
+        }
+        conl("I did my work");
+        return ["1", row.P1,row.S1]; // If none of the above conditions match, return true
+    }
+
+
+    document.getElementById("downloadPDF").addEventListener("click", generatePDF);
+</script>
+</body>
+<script src="../script.js"></script>
+
+</html>

@@ -107,22 +107,105 @@
     <button onclick="done();" type="button" class="btn btn-primary">Done</button>
 </div>
 <script>
+    var globalFullTodayData;
+    var jsonData;
+    setTimeout(function () {
+        readRecords("Teachers", {}, function (rec) {
+            var data = jsonToTeachersArray(rec);
 
-    const data = getStoredSQLResult();
+            jsonData = rec;
+            globalFullTodayData = replaceUndefinedWithNone(convertTeacherData(data, Day));
 
-    function getStoredSQLResult(storageKey = 'sqlResult') {
-        const raw = localStorage.getItem(storageKey);
-        if (!raw) return [];
-        try {
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : [parsed];
-        } catch (e) {
+        });
+
+
+
+    }, 1000);
+    var data = jsonToTeachersArray(jsonData);
+
+
+
+
+
+
+
+    function jsonToTeachersArray(jsonData) {
+        if (typeof jsonData === "string") {
+            try {
+                jsonData = JSON.parse(jsonData);
+            } catch (e) {
+                //console.error("Invalid JSON string:", e);
+                return [];
+            }
+        }
+
+        if (!Array.isArray(jsonData)) {
+            //console.error("Expected an array but got:", jsonData);
             return [];
         }
+
+        return jsonData.map(entry => ({
+            id: entry["ID"],
+            name: entry["Teacher's Name"],
+            date: entry["Date"],
+            periods: Object.keys(entry)
+                .filter(key => key.match(/^\d+$/)) // Get only period numbers (1-8)
+                .sort((a, b) => a - b) // Ensure proper order
+                .map(key => entry[key].replace(/\\n/g, "\n")) // Replace \n correctly
+        }));
     }
 
+    function readRecords(tableName, queryParams, callback) {
 
+        const baseUrl = "http://localhost:3000/api/getstring?q=";
+        const query = `SELECT * FROM ${tableName}`; // Adjust the query as needed
+        const url = baseUrl + encodeURIComponent(query);
 
+        fetch(url)
+            .then(res=>res.text())
+            .then(data => {
+                const records = JSON.parse(JSON.parse(data).content); // Adjusted according to your JSON structure
+                console.log(records);
+                callback(records);
+            })
+            .catch(error => console.error("Fetch error:", error));
+    }
+    function convertTeacherData(input, selectedDate) {
+        // Filter based on the selected date
+        const filteredData = input.filter(entry => entry.date === selectedDate);
+
+        return filteredData.map(entry => {
+            const periodsWithWork = entry.periods.filter(period => period[0] !== "-").length;
+
+            return {
+                id: entry.id,
+                teacherName: entry.name,
+                working: periodsWithWork,
+                periods: entry.periods.map(period => {
+                    if (period === "-" || period === "") {
+                        return [period, ""]; // Return the period as is with an empty subject
+                    }
+
+                    const [className, subject] = period.split("\n");
+                    return [className, subject]; // Split class and subject
+                })
+            };
+        });
+    }
+    function replaceUndefinedWithNone(data) {
+        return data.map(teacher => {
+            const updatedPeriods = teacher.periods.map(period => {
+                if (period[1] === undefined) {
+                    return [period[0], "none"];
+                }
+                return period;
+            });
+            return {
+                ...teacher,
+                periods: updatedPeriods
+            };
+        });
+    }
 
 
 </script>
@@ -141,9 +224,9 @@
 
     document.getElementById("NameIn").addEventListener("keyup", function(event) {
         const teacherId = document.getElementById("NameIn").value;
-        var teacher = getTeacherById(data,teacherId);
+        var teacher = getTeacherById(globalFullTodayData,teacherId);
         if (event.which === 13) {
-
+            // Focus to the button group when Enter is pressed in the textbox
             if (teacher != null) {
                 document.getElementById('contBtn').focus();
                 console.log("HI");
@@ -151,7 +234,7 @@
             }
         } else {
             if (teacher != null) {
-                document.getElementById("Name").innerHTML = teacher.Name;
+                document.getElementById("Name").innerHTML = teacher.teacherName;
             }else if(teacherId == ""){
                 document.getElementById("Name").innerHTML = "";
 
@@ -179,10 +262,10 @@
 
     function contin(){
         if(val2 === true) {
-            console.log("continue Executed");
+            console.log("contin Exuted");
 
             const teacherId = document.getElementById("NameIn").value;
-            const teacher = getTeacherById(data, teacherId);
+            const teacher = getTeacherById(globalFullTodayData, teacherId);
 
             if (teacher) {
                 var selectedPeriods = getSelectedPeriods();
@@ -198,7 +281,7 @@
                 document.getElementById("lis").innerHTML += `
                <tr id="row-${teacherId}">
                    <td>${teacherId}</td>
-                   <td>${teacher.Name}</td>
+                   <td>${teacher.teacherName}</td>
                    ${rowData}
                    <td><button class="btn btn-danger btn-sm" onclick="removeRow(${teacherId})">Remove</button></td>
                </tr>
@@ -234,21 +317,66 @@
     }
 
 
-
-
+    var Day = localStorage.getItem("day");
+    //var Day = days[new Date().getDay()];
     let Excluded = "";
     let val = false;
     function getTeacherById(data, teacherId) {
-        teacherId = parseInt(teacherId);
-        return data.find(teacher => teacher.ID === teacherId) || null;
+        return data.find(teacher => teacher.id === teacherId) || null;
+    }
+    function period(event) {
+        const periodNumber = parseInt(document.getElementById('textbox2').value) - 1;//AS AN INDEX
+        const teacherId = document.getElementById("NameIn").value;
+        var teacher = getTeacherById(globalFullTodayData,teacherId);
+
+        if (event.which !== 13) {
+            if (teacher) {
+                const dayPeriods = teacher.periods;
+                if (dayPeriods[periodNumber][0] === '-') {
+                    cont();
+                } else {
+                    inval();
+                }
+            }
+        } else {
+            if (val) {
+
+                document.getElementById("lis").innerHTML += `
+                <tr id="row-${teacherId}">
+                    <td>${teacherId}</td>
+                    <td>${document.getElementById("Name").innerHTML}</td>
+                    <td>${document.getElementById("textbox2").value}</td>
+
+                    <td><button class="btn btn-danger btn-sm" onclick="removeRow(${teacherId})">Remove</button></td>
+                </tr>
+            `;
+
+
+                //scrollToBottom();
+
+                Excluded += `${document.getElementById("NameIn").value}:${document.getElementById("textbox2").value},`;
+                val = false;
+                document.getElementById("textbox2").value = "";
+                document.getElementById("NameIn").value = "";
+                document.getElementById("Name").innerHTML = "";
+                document.getElementById("Valid").innerHTML = "";
+                document.getElementById("NameIn").focus();
+            }
+        }
     }
     function removeRow(teacherId) {
         let row = document.getElementById("row-" + teacherId);
         if (row) row.remove();
     }
+    function cont() {
+        document.getElementById("Valid").innerHTML = "Valid";
+        val = true;
+    }
 
-
-
+    function inval() {
+        document.getElementById("Valid").innerHTML = "<span style='color:red'>Invalid<br>Period specified is not free</span>";
+        val = false;
+    }
     function formatExcludedPeriods(data) {
         return data.map(([id, period]) => `${id}:${period}`).join(",");
     }

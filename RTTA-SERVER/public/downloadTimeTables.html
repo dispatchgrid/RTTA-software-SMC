@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON to CSV Converter</title>
+</head>
+<body>
+<button onclick="convertAndDownload()">Download CSV</button>
+
+<script>
+    var jsonData;
+
+    getData();
+    function getData(){
+        fetch('http://localhost:3000/api/getstring')
+            .then(res => res.text())
+            .then(data => {
+                console.log("Stored string:", data);
+                jsonData = JSON.parse(JSON.parse(data).content);
+                console.log(jsonData);
+            })
+            .catch(err => console.error("Error fetching string:", err));
+
+    }
+
+    function convertAndDownload() {
+        const headers = ['ID', "Name", "Date"];
+        for (let i = 1; i <= 8; i++) {
+            headers.push(`P${i} Class`);
+            headers.push(`P${i} Subject`);
+        }
+
+        const rows = jsonData.map(entry => {
+            const row = [];
+            row.push(entry["ID"]);
+            row.push(entry["Teacher's Name"]);
+            row.push(entry["Date"]);
+            for (let i = 1; i <= 8; i++) {
+                const val = (entry[i.toString()] || '').replace(/\\n/g, '\n');
+                const [cls, subj] = val.split('\n');
+                row.push(cls || '');
+                row.push(subj || '');
+            }
+            return row;
+        });
+
+        const csv = [headers.join(','), ...rows.map(r => r.map(cell => `"${cell}"`).join(','))].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'timetable.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>

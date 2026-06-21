@@ -1,0 +1,17 @@
+{
+  "name": "rtta-software",
+  "version": "1.0.0",
+  "description": "Relief Time Table Allocator Software",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nethmal Sooriyabandara",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "fastify": "^5.4.0",
+    "sqlite3": "^5.1.7"
+  }
+}

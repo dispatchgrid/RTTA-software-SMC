@@ -78,8 +78,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-
-
-
-
 document.head.innerHTML +="<link rel='icon' href='https://cdn.glitch.global/ce780abf-a1fe-4121-8751-a8a65995005d/favicon.ico?v=1740926118094' />";

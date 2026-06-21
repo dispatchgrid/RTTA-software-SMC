@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RTTA CSV Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabaseUrl = 'https://oxhbmisoplqbijzbldyi.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94aGJtaXNvcGxxYmlqemJsZHlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMTQ3MTcsImV4cCI6MjA5NzU5MDcxN30.L-Tk9RaiThgxDE8FtM3Wma9gIjBGgFoqpJbU51C8Abg';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const columns = [
+      "ID", "Name", "Date",
+      "P1 Class", "P1 Subject",
+      "P2 Class", "P2 Subject",
+      "P3 Class", "P3 Subject",
+      "P4 Class", "P4 Subject",
+      "P5 Class", "P5 Subject",
+      "P6 Class", "P6 Subject",
+      "P7 Class", "P7 Subject",
+      "P8 Class", "P8 Subject"
+    ];
+
+    async function downloadCSV() {
+      const { data, error } = await supabase
+              .from("rttasmcmain")
+              .select("*");
+
+      if (error || !data) {
+        alert("Failed to fetch data");
+        console.error(error);
+        return;
+      }
+
+      const csv = Papa.unparse(data, { columns });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "RTTA_Timetable.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function uploadCSV(file) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const rows = results.data;
+
+          // Step 1: Delete all existing rows
+          const { error: deleteError } = await supabase
+                  .from("rttasmcmain")
+                  .delete()
+                  .neq("ID", 99999); // Deletes all rows where ID is not null
+
+          if (deleteError) {
+            alert("Failed to delete existing data");
+            console.error(deleteError);
+            return;
+          }
+
+          // Step 2: Bulk insert all rows at once
+          const { error: insertError } = await supabase
+                  .from("rttasmcmain")
+                  .insert(rows);
+
+          if (insertError) {
+            alert("Insert failed");
+            console.error(insertError);
+            return;
+          }
+
+          alert("Upload complete!");
+        }
+      });
+    }
+
+
+    window.handleUpload = function(event) {
+      const file = event.target.files[0];
+      if (file) uploadCSV(file);
+    };
+
+    window.downloadCSV = downloadCSV;
+  </script>
+</head>
+<body style="font-family: sans-serif; padding: 2rem;">
+<h1>RTTA CSV Manager</h1>
+<button onclick="downloadCSV()" style="padding: 10px 20px; font-size: 1rem;">📥 Download CSV</button>
+<br><br>
+<input type="file" accept=".csv" onchange="handleUpload(event)" style="font-size: 1rem;" />
+<p>📤 Upload a CSV file to update the <strong>rttasmcmain</strong> table</p>
+</body>
+</html>
