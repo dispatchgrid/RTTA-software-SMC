@@ -1,0 +1,15 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Build and log files
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets
+.env
